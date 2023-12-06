@@ -13,6 +13,7 @@ struct Game {
     game: u32,
     grabs: Vec<Grab>,
     line: String,
+    power: u32,
 }
 
 
@@ -30,6 +31,7 @@ fn main() {
 // read a file line by line
 fn read_file(file_name: &str) {
     let mut game_id_sum = 0;
+    let mut game_power_sum = 0;
 
     // open the file in read-only mode
     if let Ok(file) = File::open(file_name) {
@@ -40,22 +42,27 @@ fn read_file(file_name: &str) {
             // ignore any lines that can't be read properly
             if let Ok(line) = line {
                 //println!("{}. {}", index + 1, line);
-                let game = parse_game(&line);
+                let mut game = parse_game(&line);
                 // println!("{} {}", game.game, game.grabs.len());
-                if possible_game(&game) {
-                    //println!("Game {} is possible", game.game);
-                    //println!("{}", game.line);
-                    game_id_sum += game.game;   
-                } else {
-                    // println!("Game {} is not possible", game.game);
-                    // println!("{}\n", game.line);
-                }
+                // if possible_game(&mut game) {
+                //     //println!("Game {} is possible", game.game);
+                //     //println!("{}", game.line);
+                //     game_id_sum += game.game;   
+                //     // println!("Game power: {}", game.power);
+                // } else {
+                //     // println!("Game {} is not possible", game.game);
+                //     // println!("{}\n", game.line);
+                // }
+                set_game_power(&mut game);
+                game_power_sum += game.power;
+                // println!("Game {} power: {}", game.game, game.power);
             }
         }
     } else {
         println!("Couldn't open file");
     }
     println!("Sum of game IDs of possible games: {}", game_id_sum);
+    println!("Sum of game powers: {}", game_power_sum);
 }
 
 fn parse_game(game_str: &str) -> Game {
@@ -78,11 +85,44 @@ fn parse_game(game_str: &str) -> Game {
         grabs.push(Grab { colours: colours });
     }
 
-    Game { game: game_number, grabs: grabs, line: game_str.to_string() }
+    Game { game: game_number, grabs: grabs, line: game_str.to_string(), power: 0 }
 }
 
 
-fn possible_game(game: &Game) -> bool {
+fn set_game_power(gram: &mut Game) {
+    let mut power = 0;
+
+    let mut red_min = 0;
+    let mut blue_min = 0;
+    let mut green_min = 0;
+
+    for grab in &gram.grabs {
+        for (colour, count) in &grab.colours {
+            if *colour == "red" {
+                if red_min < *count {
+                    red_min = *count;
+                }
+            }
+            else if *colour == "green" {
+                if green_min < *count {
+                    green_min = *count;
+                }
+            }
+            else if *colour == "blue" {
+                if blue_min < *count {
+                    blue_min = *count;
+                }
+            }
+            else {
+                println!("Unknown colour: {}", colour);
+            }
+        }
+    }
+    gram.power = red_min * green_min * blue_min;
+}
+
+
+fn possible_game(game: &mut Game) -> bool {
     let mut possible = true;
     // let mut red_sum = 0;
     // let mut blue_sum = 0;
