@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io::{self, BufRead};
 use std::fs::File;
 use std::env;
@@ -7,6 +8,12 @@ struct Word {
     text: String,
     coordinates: Vec<(usize, usize)>,
     keep: bool,
+}
+
+
+struct Gear {
+    coordinate: (usize, usize),
+    words: HashSet<String>,
 }
 
 
@@ -67,7 +74,57 @@ fn main() {
     } 
 
     println!("Cumulative sum of all numbers: {}", cumulative_sum);
+
+    // part b
+
+    let mut gears = Vec::<Gear>::new();
+    for (row_index, row) in grid.iter().enumerate() {
+        for (column_index, character) in row.iter().enumerate() {
+            // check if character is "*" character
+            if *character == '*' {
+                // create Gear struct and add it to gears vector
+                let gear = Gear{ coordinate: (row_index, column_index), words: HashSet::new() };
+                gears.push(gear);
+            }
+        }
+    }
+
+    // for word in words check if any of the coordinates are in the same row or column as any of the gears
+    for word in words.iter() {
+        for gear in gears.iter_mut() {
+            for coordinate in word.coordinates.iter() {
+                for adjacent in get_adjacent_coordinates(&grid, coordinate).iter() {
+                    if adjacent.0 == gear.coordinate.0 && adjacent.1 == gear.coordinate.1 {
+                        gear.words.insert(word.text.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    for gear in gears.iter() {
+        println!("({}, {}): {:?}", gear.coordinate.0, gear.coordinate.1, gear.words);
+    }
+
+    // for gear in gears, if len gear.words is 2 then mutiply the two numbers together and add to cumulative sum
+    let mut cumulative_product = 0;
+    for gear in gears.iter() {
+        if gear.words.len() == 2 {
+            let mut product = 1;
+            for word in gear.words.iter() {
+                let number = word.parse::<u32>().unwrap();
+                product *= number;
+            }
+            cumulative_product += product;
+        }
+        if gear.words.len() > 2 {
+            println!("More than 2 words: {:?}", gear.words);
+        }
+    }
+    println!("Cumulative product of all numbers: {}", cumulative_product);
+    // 82454502 is too low
 }
+
 
 // read file as 2d vector of characters
 fn read_file(file_name: &str) -> Vec<Vec<char>> {
@@ -105,6 +162,46 @@ fn print_grid(grid: &Vec<Vec<char>>) {
     }
     println!();
 }
+
+// function which gets the adjacent coordinates for a given set of coordinates in the grid
+fn get_adjacent_coordinates(grid: &Vec<Vec<char>>, coordinates: &(usize, usize)) -> Vec<(usize, usize)> {
+    let (row_index, column_index) = coordinates;
+    let mut adjacent_coordinates = Vec::new();
+
+    // above
+    if *row_index > 0 {
+        adjacent_coordinates.push((row_index - 1, *column_index));
+    }
+    // below
+    if *row_index < grid.len() - 1 {
+        adjacent_coordinates.push((row_index + 1, *column_index));
+    }
+    // left
+    if *column_index > 0 {
+        adjacent_coordinates.push((*row_index, column_index - 1));
+    }
+    // right
+    if *column_index < grid[*row_index].len() - 1 {
+        adjacent_coordinates.push((*row_index, column_index + 1));
+    }
+    // diagonal
+    if *row_index > 0 && *column_index > 0 {
+        adjacent_coordinates.push((*row_index - 1, column_index - 1));
+    }
+    if *row_index > 0 && *column_index < grid[*row_index].len() - 1 {
+        adjacent_coordinates.push((*row_index - 1, column_index + 1));
+    }
+    if *row_index < grid.len() - 1 && *column_index > 0 {
+        adjacent_coordinates.push((*row_index + 1, column_index - 1));
+    }
+    if *row_index < grid.len() - 1 && *column_index < grid[*row_index].len() - 1 {
+        adjacent_coordinates.push((*row_index + 1, column_index + 1));
+    }
+
+    adjacent_coordinates
+}
+
+
 
 fn get_adjacent_characters(grid: &Vec<Vec<char>>, coordinates: &Vec<(usize, usize)>) -> Vec<Vec<char>> {
     let mut adjacent_characters = Vec::new();
