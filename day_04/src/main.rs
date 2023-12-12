@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -61,8 +61,8 @@ fn main() {
     });
 
     let mut cumulative_score = 0;
-    for card in cards {
-        println!("Card {}: {:?} | {:?}", card.card_id, card.winning_numbers, card.numbers);
+    for card in cards.iter() {
+        // println!("Card {}: {:?} | {:?}", card.card_id, card.winning_numbers, card.numbers);
 
         let intersection_size = card.winning_numbers.intersection(&card.numbers).count();
 
@@ -71,8 +71,32 @@ fn main() {
             score = 2u32.pow(intersection_size as u32 - 1);
         }
 
-        println!("{}: {} - {}\n", card.card_id, intersection_size, score);
+        // println!("{}: {} - {}\n", card.card_id, intersection_size, score);
         cumulative_score += score;
     }
-    println!("final score: {}", cumulative_score);
+    println!("P1 final score: {}", cumulative_score);
+
+    // part II
+    let mut card_stack = HashMap::new();
+
+    for card in cards.iter() {
+        card_stack.insert(card.card_id, 1);
+    }
+
+    for card in cards.iter() {
+        let intersection_size = card.winning_numbers.intersection(&card.numbers).count();
+        // account for copies
+        let current_card_score = *card_stack.get(&card.card_id).unwrap_or(&0);
+
+        for _j in 0..current_card_score {
+            for i in 1..(intersection_size + 1)  {
+                let key = card.card_id + i as u32;
+                let card_score = *card_stack.get(&key).unwrap_or(&0);
+                card_stack.insert(key, card_score + 1);
+            }
+        }
+    }
+
+    let sum: u32 = card_stack.values().sum();
+    println!("P2 Sum of card_stack values: {}", sum);
 }
